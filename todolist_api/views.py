@@ -1,13 +1,15 @@
 from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView
+from rest_framework import generics
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 
 from todolist.models import Todolist
 from . import serializers
+
 
 class TodoistListApiView(APIView):
     """
@@ -18,6 +20,8 @@ class TodoistListApiView(APIView):
 
     def get(self, request: Request) -> Response:
         """Вывод всех дел"""
+        if not IsAuthenticated:  # Отбрасываем всех неавторизованных
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         objects = Todolist.objects.all()
         serializer = serializers.TodolistSerializer(
             instance=objects,
@@ -27,6 +31,8 @@ class TodoistListApiView(APIView):
 
     def post(self, request: Request):
         """Добавление записи через json"""
+        if not IsAuthenticated:  # Отбрасываем всех неавторизованных
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         serializer = serializers.TodolistSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -41,13 +47,21 @@ class TodoOnceView(APIView):
     """
     def get(self, request: Request, pk: int) -> Response:
         """Отображение заданной записи по заданному ключу"""
+        if not IsAuthenticated:  # Отбрасываем всех неавторизованных
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         queryset = get_object_or_404(Todolist, pk=pk)  # проверка наличия записи по указанному ключу
         serializer = serializers.TodolistSerializer(instance=queryset)
         return Response(serializer.data)
 
     def put(self, request: Request, pk: int) -> Response:
         """Полное обновление записи по ключу"""
+        if not IsAuthenticated:  # Отбрасываем всех неавторизованных
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         queryset = get_object_or_404(Todolist, pk=pk)
+
+        if queryset.author.username != request.user:  # запрещаем пользователю изменять чужие заметки
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
         serializer = serializers.TodolistSerializer(instance=queryset,   # объект с которым работаем
                                                     data=request.data,   # данные из браузера
                                                     partial=True)        # разрешение передавать часть объектов
@@ -61,13 +75,41 @@ class TodoOnceView(APIView):
         """Частичное обновление записи по ключу"""
         return self.put(request, pk)
 
-class TodoListApiView(ListAPIView):
-    """
-    Представление для вывода списка с фильтрацией
-    """
+
+class TaskListCreateAPIView(generics.ListCreateAPIView):
+    """представление через generic """
     queryset = Todolist.objects.all()
     serializer_class = serializers.TodolistSerializer
 
+    ordering = ["important", "update_at"]  # поля для сортировки
+
     def get_queryset(self):
-        queryset = super().get_queryset() # todo доделать дженерик
+        queryset = super().get_queryset()
+        queryset = self.order_by_queryset(queryset)
         return queryset
+
+    def order_by_queryset(self, queryset):
+        """
+        Сортировка заметок по дате, затем по важности.
+        """
+        return queryset.order_by(*self.ordering)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)  # добавили автора для сохранения
+
+
+class TodoPublicListApiView(generics.ListAPIView):
+    """
+    Представление для отображения только публичных записей для
+    авторизованных пользователей, сортировка по времени
+    """
+    queryset = Todolist.objects.all()
+    serializer_class = serializers.TodolistSerializer
+    permission_classes = (IsAuthenticated,)  # запрещаем неавторизованных пользователей
+
+    def get_queryset(self):
+
+        queryset = super().get_queryset()
+        return queryset.filter(public=True).order_by("-create_at")
+
+
