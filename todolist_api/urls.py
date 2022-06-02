@@ -7,4 +7,6 @@ urlpatterns = [
     path('case/<int:pk>', views.TodoOnceView.as_view()),
     path("cases/", views.TaskListCreateAPIView.as_view()),
     path("public_cases/", views.TodoPublicListApiView.as_view()),
+    path("filter_cases/", views.TodoListFilterApiView.as_view()),
+
 ]

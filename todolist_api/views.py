@@ -101,7 +101,7 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
 class TodoPublicListApiView(generics.ListAPIView):
     """
     Представление для отображения только публичных записей для
-    авторизованных пользователей, сортировка по времени
+    авторизованных пользователей, сортировка по времени,
     """
     queryset = Todolist.objects.all()
     serializer_class = serializers.TodolistSerializer
@@ -112,4 +112,34 @@ class TodoPublicListApiView(generics.ListAPIView):
         queryset = super().get_queryset()
         return queryset.filter(public=True).order_by("-create_at")
 
+
+class TodoListFilterApiView(generics.ListAPIView):
+    """
+    Представление для отображения записей с импользованием фильтров
+    public - True / False  - отметка публичности
+    important - True / False - отметка важности
+    status - отметка о сотоянии:
+        0 - отложено,
+        1 - активна,
+        2 - выполена
+    """
+    queryset = Todolist.objects.all()
+    serializer_class = serializers.TodolistSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def filter_queryset(self, queryset):
+        # забираем параметр публичности
+        public = self.request.query_params.get('public')
+        if public:
+            queryset = queryset.filter(public=public)
+        # забираем параметр важности
+        important = self.request.query_params.get('important')
+        if important:
+            queryset = queryset.filter(important=important)
+        # забираем статус
+        stat = self.request.query_params.getlist('status')
+        if stat:
+            queryset = queryset.filter(status__in=stat)
+
+        return queryset
 

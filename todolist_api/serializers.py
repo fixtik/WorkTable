@@ -14,7 +14,7 @@ class TodolistSerializer(serializers.ModelSerializer):
         model = Todolist
 
         fields = (
-            'title', 'text', 'create_at', 'update_at', 'status', 'public', 'important',  # из модели
+            'id', 'title', 'text', 'create_at', 'update_at', 'status', 'public', 'important',  # из модели
             'author',  # из сериализатора
         )
 
