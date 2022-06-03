@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from todolist.models import Todolist
-from . import serializers
+from . import serializers, filtres
 
 
 class TodoistListApiView(APIView):
@@ -130,6 +130,7 @@ class TodoListFilterApiView(generics.ListAPIView):
         0 - отложено,
         1 - активна,
         2 - выполена
+    работа по url: filter_cases/
     """
     queryset = Todolist.objects.all()
     serializer_class = serializers.TodolistSerializer
@@ -138,16 +139,13 @@ class TodoListFilterApiView(generics.ListAPIView):
     def filter_queryset(self, queryset):
         # забираем параметр публичности
         public = self.request.query_params.get('public')
-        if public:
-            queryset = queryset.filter(public=public)
+        queryset = filtres.filter_by_public(queryset, public)
         # забираем параметр важности
         important = self.request.query_params.get('important')
-        if important:
-            queryset = queryset.filter(important=important)
+        queryset = filtres.filter_by_important(queryset, important)
         # забираем статус
         stat = self.request.query_params.getlist('status')
-        if stat:
-            queryset = queryset.filter(status__in=stat)
+        queryset = filtres.filter_by_status(queryset, stat)
 
         return queryset
 
