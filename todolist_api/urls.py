@@ -8,5 +8,6 @@ urlpatterns = [
     path("cases/", views.TodoListCreateAPIView.as_view()),
     path("public_cases/", views.TodoPublicListApiView.as_view()),
     path("filter_cases/", views.TodoListFilterApiView.as_view()),
+    path("edit_case/<int:pk>", views.TodoEditViaGeneric.as_view()),
 
 ]

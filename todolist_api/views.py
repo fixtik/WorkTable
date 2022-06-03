@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
 from todolist.models import Todolist
-from . import serializers, filtres
+from . import serializers, filtres, permissions
 
 
 class TodoistListApiView(APIView):
@@ -146,4 +146,21 @@ class TodoListFilterApiView(generics.ListAPIView):
         queryset = filtres.filter_by_status(queryset, stat)
 
         return queryset
+
+
+class TodoEditViaGeneric(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Представление для редактирования единичной записи
+    работа по url: /edit_case/<int>
+    """
+    queryset = Todolist.objects.all()
+    serializer_class = serializers.TodolistSerializer
+    # запрещаем неавторизованным доступ, неавторам - редактирование
+    permission_classes = (IsAuthenticated, permissions.OnlyAuthorEditTask)
+
+    # def get_queryset(self):
+    #     queryset = super().get_queryset()
+    #     if self.request.user != :
+    #         queryset = filtres.filter_by_public(public=True)
+    #     return queryset
 
