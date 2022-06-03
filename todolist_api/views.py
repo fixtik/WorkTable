@@ -42,7 +42,8 @@ class TodoOnceView(APIView):
     Представление для работы с единичной записью
     Доступ к записи - по ключу, работа через url: case/int
     """
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, permissions.OnlyAuthorEditTask)
+
     def get(self, request: Request, pk: int) -> Response:
         """Отображение заданной записи по заданному ключу"""
         queryset = get_object_or_404(Todolist, pk=pk)  # проверка наличия записи по указанному ключу
@@ -52,10 +53,6 @@ class TodoOnceView(APIView):
     def put(self, request: Request, pk: int) -> Response:
         """Полное обновление записи по ключу"""
         queryset = get_object_or_404(Todolist, pk=pk)
-
-        if queryset.author.username != str(request.user):  # запрещаем пользователю изменять чужие заметки
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
         serializer = serializers.TodolistSerializer(instance=queryset,   # объект с которым работаем
                                                     data=request.data,   # данные из браузера
                                                     partial=True)        # разрешение передавать часть объектов
@@ -72,9 +69,6 @@ class TodoOnceView(APIView):
     def delete(self, request: Request, pk: int) -> Response:
         """ удаление записи по ключу"""
         queryset = get_object_or_404(Todolist, pk=pk)
-
-        if queryset.author.username != str(request.user):  # запрещаем пользователю изменять чужие заметки
-            return Response(status=status.HTTP_403_FORBIDDEN)
         queryset.delete()
         queryset.save()
         return Response(status=status.HTTP_200_OK)
