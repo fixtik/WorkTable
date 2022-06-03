@@ -15,12 +15,12 @@ class TodoistListApiView(APIView):
     """
     Представление, которое позволяет вывести весь список дел и добавить новую запись.
     Выводит записи всех пользователей, вне зависимости от статуса, публичности и т.д.
-    работа через url: cases
+    работа через url: all_cases
     """
 
     def get(self, request: Request) -> Response:
         """Вывод всех дел"""
-        if not IsAuthenticated:  # Отбрасываем всех неавторизованных
+        if str(request.user) == 'AnonymousUser':  # отсекаем неавторизованных пользователей
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         objects = Todolist.objects.all()
         serializer = serializers.TodolistSerializer(
@@ -31,8 +31,6 @@ class TodoistListApiView(APIView):
 
     def post(self, request: Request):
         """Добавление записи через json"""
-        if not IsAuthenticated:  # Отбрасываем всех неавторизованных
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
         serializer = serializers.TodolistSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -47,19 +45,17 @@ class TodoOnceView(APIView):
     """
     def get(self, request: Request, pk: int) -> Response:
         """Отображение заданной записи по заданному ключу"""
-        if not IsAuthenticated:  # Отбрасываем всех неавторизованных
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if str(request.user) == 'AnonymousUser':   # отсекаем неавторизованных пользователей
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
         queryset = get_object_or_404(Todolist, pk=pk)  # проверка наличия записи по указанному ключу
         serializer = serializers.TodolistSerializer(instance=queryset)
         return Response(serializer.data)
 
     def put(self, request: Request, pk: int) -> Response:
         """Полное обновление записи по ключу"""
-        if not IsAuthenticated:  # Отбрасываем всех неавторизованных
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
         queryset = get_object_or_404(Todolist, pk=pk)
 
-        if queryset.author.username != request.user:  # запрещаем пользователю изменять чужие заметки
+        if queryset.author.username != str(request.user):  # запрещаем пользователю изменять чужие заметки
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         serializer = serializers.TodolistSerializer(instance=queryset,   # объект с которым работаем
@@ -71,15 +67,29 @@ class TodoOnceView(APIView):
         else:
             return Response(status.HTTP_400_BAD_REQUEST)
 
-    def patch(self, request:Request, pk: int) -> Response:
+    def patch(self, request: Request, pk: int) -> Response:
         """Частичное обновление записи по ключу"""
         return self.put(request, pk)
 
+    def delete(self, request: Request, pk: int) -> Response:
+        """ удаление записи по ключу"""
+        queryset = get_object_or_404(Todolist, pk=pk)
 
-class TaskListCreateAPIView(generics.ListCreateAPIView):
-    """представление через generic """
+        if queryset.author.username != str(request.user):  # запрещаем пользователю изменять чужие заметки
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        queryset.delete()
+        queryset.save()
+        return Response(status=status.HTTP_200_OK)
+
+class TodoListCreateAPIView(generics.ListCreateAPIView):
+    """
+    Представление через generic, вывод отсортированных записей
+    сортировка по дате, затем по важности
+    работа через url: cases
+    """
     queryset = Todolist.objects.all()
     serializer_class = serializers.TodolistSerializer
+    permission_classes = (IsAuthenticated,)
 
     ordering = ["important", "update_at"]  # поля для сортировки
 
@@ -88,10 +98,8 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
         queryset = self.order_by_queryset(queryset)
         return queryset
 
-    def order_by_queryset(self, queryset):
-        """
-        Сортировка заметок по дате, затем по важности.
-        """
+    def order_by_queryset(self, queryset: queryset):
+        """ Сортировка заметок по дате, затем по важности."""
         return queryset.order_by(*self.ordering)
 
     def perform_create(self, serializer):
