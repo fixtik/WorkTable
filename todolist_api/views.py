@@ -17,11 +17,10 @@ class TodoistListApiView(APIView):
     Выводит записи всех пользователей, вне зависимости от статуса, публичности и т.д.
     работа через url: all_cases
     """
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request: Request) -> Response:
         """Вывод всех дел"""
-        if str(request.user) == 'AnonymousUser':  # отсекаем неавторизованных пользователей
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
         objects = Todolist.objects.all()
         serializer = serializers.TodolistSerializer(
             instance=objects,
@@ -43,10 +42,9 @@ class TodoOnceView(APIView):
     Представление для работы с единичной записью
     Доступ к записи - по ключу, работа через url: case/int
     """
+    permission_classes = (IsAuthenticated,)
     def get(self, request: Request, pk: int) -> Response:
         """Отображение заданной записи по заданному ключу"""
-        if str(request.user) == 'AnonymousUser':   # отсекаем неавторизованных пользователей
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
         queryset = get_object_or_404(Todolist, pk=pk)  # проверка наличия записи по указанному ключу
         serializer = serializers.TodolistSerializer(instance=queryset)
         return Response(serializer.data)
