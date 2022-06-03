@@ -158,9 +158,5 @@ class TodoEditViaGeneric(generics.RetrieveUpdateDestroyAPIView):
     # запрещаем неавторизованным доступ, неавторам - редактирование
     permission_classes = (IsAuthenticated, permissions.OnlyAuthorEditTask)
 
-    # def get_queryset(self):
-    #     queryset = super().get_queryset()
-    #     if self.request.user != :
-    #         queryset = filtres.filter_by_public(public=True)
-    #     return queryset
+
 
