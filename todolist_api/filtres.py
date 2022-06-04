@@ -9,8 +9,9 @@ def filter_by_status(queryset: QuerySet, status_code: Optional[List]) -> QuerySe
     :param status_code: список состояний
     :return: модернизированный queryset
     """
-    if status_code:
-        queryset = queryset.filter(status__in=status_code)
+    if status_code is None:
+        return queryset
+    queryset = queryset.filter(status__in=status_code)
     return queryset
 
 
@@ -21,8 +22,9 @@ def filter_by_important(queryset: QuerySet, important: Optional[bool]):
     :param important: Bool True / False
     :return: модернизированный queryset
     """
-    if important:
-        queryset = queryset.filter(important=important)
+    if important is None:
+        return queryset
+    queryset = queryset.filter(important=important)
     return queryset
 
 
@@ -33,7 +35,8 @@ def filter_by_public(queryset: QuerySet, public: Optional[bool]):
     :param public: Bool True / False
     :return: модернизированный queryset
     """
-    if public:
-        queryset = queryset.filter(public=public)
-    return public
+    if public is None:
+        return queryset
+    queryset = queryset.filter(public=public)
+    return queryset
 
