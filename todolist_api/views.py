@@ -46,7 +46,8 @@ class TodoOnceView(APIView):
 
     def get(self, request: Request, pk: int) -> Response:
         """Отображение заданной записи по заданному ключу"""
-        queryset = get_object_or_404(Todolist, pk=pk)  # проверка наличия записи по указанному ключу
+        queryset = get_object_or_404(Todolist, pk=pk) # проверка наличия записи по указанному ключу
+        self.check_object_permissions(request, queryset)
         serializer = serializers.TodolistSerializer(instance=queryset)
         return Response(serializer.data)
 
@@ -70,7 +71,7 @@ class TodoOnceView(APIView):
         """ удаление записи по ключу"""
         queryset = get_object_or_404(Todolist, pk=pk)
         queryset.delete()
-        return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class TodoListCreateAPIView(generics.ListCreateAPIView):
     """
