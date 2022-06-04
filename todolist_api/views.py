@@ -70,7 +70,6 @@ class TodoOnceView(APIView):
         """ удаление записи по ключу"""
         queryset = get_object_or_404(Todolist, pk=pk)
         queryset.delete()
-        queryset.save()
         return Response(status=status.HTTP_200_OK)
 
 class TodoListCreateAPIView(generics.ListCreateAPIView):
@@ -149,7 +148,7 @@ class TodoEditViaGeneric(generics.RetrieveUpdateDestroyAPIView):
     """
     queryset = Todolist.objects.all()
     serializer_class = serializers.TodolistSerializer
-    # запрещаем неавторизованным доступ, неавторам - редактирование
+    # запрещаем неавторизованным доступ, не авторам - редактирование
     permission_classes = (IsAuthenticated, permissions.OnlyAuthorEditTask)
 
 
