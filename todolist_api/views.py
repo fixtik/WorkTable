@@ -44,32 +44,43 @@ class TodoOnceView(APIView):
     """
     permission_classes = (IsAuthenticated, permissions.OnlyAuthorEditTask)
 
-    def get(self, request: Request, pk: int) -> Response:
-        """Отображение заданной записи по заданному ключу"""
-        queryset = get_object_or_404(Todolist, pk=pk) # проверка наличия записи по указанному ключу
-        self.check_object_permissions(request, queryset)
-        serializer = serializers.TodolistSerializer(instance=queryset)
-        return Response(serializer.data)
-
-    def put(self, request: Request, pk: int) -> Response:
-        """Полное обновление записи по ключу"""
-        queryset = get_object_or_404(Todolist, pk=pk)
-        serializer = serializers.TodolistSerializer(instance=queryset,   # объект с которым работаем
-                                                    data=request.data,   # данные из браузера
-                                                    partial=True)        # разрешение передавать часть объектов
+    def change_body_case(self, pk: int, partial: bool) -> Response:
+        """Выполнение частичного или полного обновления полей"""
+        instance = self.check_constraint(pk)
+        serializer = serializers.TodolistSerializer(instance=instance,  # объект с которым работаем
+                                                    data=self.request.data,  # данные из браузера
+                                                    partial=partial)
         if serializer.is_valid(True):  # проверка данных с разрешением вызова исключений
             serializer.save()  # сохранение данных
             return Response(serializer.data, status.HTTP_200_OK)
         else:
-            return Response(status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    def check_constraint(self, pk: int):
+        """Проверка по ограничениям"""
+        instance = get_object_or_404(Todolist, pk=pk)
+        self.check_object_permissions(self.request, instance)
+        return instance
+
+    def get(self, request: Request, pk: int) -> Response:
+        """Отображение заданной записи по заданному ключу"""
+        instance = self.check_constraint(pk)
+        serializer = serializers.TodolistSerializer(instance=instance)
+        return Response(serializer.data)
+
+    def put(self, request: Request, pk: int) -> Response:
+        """Полное обновление записи по ключу"""
+        return self.change_body_case(pk=pk, partial=False)
 
     def patch(self, request: Request, pk: int) -> Response:
         """Частичное обновление записи по ключу"""
-        return self.put(request, pk)
+        return self.change_body_case(pk=pk, partial=True)
+
 
     def delete(self, request: Request, pk: int) -> Response:
         """ удаление записи по ключу"""
         queryset = get_object_or_404(Todolist, pk=pk)
+        self.check_object_permissions(request, queryset)
         queryset.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
